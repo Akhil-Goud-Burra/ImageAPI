@@ -48,5 +48,60 @@ namespace ImageAPI.Controllers
         }
 
 
+
+
+
+        // api/products/1
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProduct(int id, [FromForm] ProductUpdateDTO productToUpdate)
+        {
+            try
+            {
+                if (id != productToUpdate.Id)
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, $"id in url and form body does not match.");
+                }
+
+                var existingProduct = await productRepo.FindProductByIdAsync(id);
+                if (existingProduct == null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, $"Product with id: {id} does not found");
+                }
+                string oldImage = existingProduct.ProductImage;
+                if (productToUpdate.ImageFile != null)
+                {
+                    if (productToUpdate.ImageFile?.Length > 1 * 1024 * 1024)
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, "File size should not exceed 1 MB");
+                    }
+                    string[] allowedFileExtentions = [".jpg", ".jpeg", ".png"];
+                    string createdImageName = await fileService.SaveFileAsync(productToUpdate.ImageFile, allowedFileExtentions);
+                    productToUpdate.ProductImage = createdImageName;
+                }
+
+                // mapping `ProductDTO` to `Product` manually. You can use automapper.
+                existingProduct.Id = productToUpdate.Id;
+                existingProduct.ProductName = productToUpdate.ProductName;
+                existingProduct.ProductImage = productToUpdate.ProductImage;
+
+                var updatedProduct = await productRepo.UpdateProductAsync(existingProduct);
+
+                // if image is updated, then we have to delete old image from directory
+                if (productToUpdate.ImageFile != null)
+                    fileService.DeleteFile(oldImage);
+
+                return Ok(updatedProduct);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+
+
+
+
     }
 }

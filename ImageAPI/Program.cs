@@ -5,6 +5,7 @@ using ImageManipulation.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using ImageManipulation.Data.Repositories;
 using ImageManipulation.Data.Services;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +66,13 @@ app.UseRouting();
 app.UseCors("AllowSpecificOrigin");
 
 app.UseHttpsRedirection();
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+           Path.Combine(builder.Environment.ContentRootPath, "Uploads")),
+    RequestPath = "/Resources"
+});
 
 app.UseAuthorization();
 
