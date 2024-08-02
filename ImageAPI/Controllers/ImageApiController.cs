@@ -103,5 +103,36 @@ namespace ImageAPI.Controllers
 
 
 
+
+        // api/products/1
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProduct(int id)
+        {
+            try
+            {
+                var existingProduct = await productRepo.FindProductByIdAsync(id);
+                if (existingProduct == null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, $"Product with id: {id} does not found");
+                }
+
+                await productRepo.DeleteProductAsync(existingProduct);
+                // After deleting product from database,remove file from directory.
+                fileService.DeleteFile(existingProduct.ProductImage);
+                return NoContent();  // return 204
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+
+
+
+
+
+
     }
 }
