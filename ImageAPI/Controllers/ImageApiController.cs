@@ -28,6 +28,9 @@ namespace ImageAPI.Controllers
                 }
 
                 string[] allowedFileExtentions = [".jpg", ".jpeg", ".png"];
+
+                if(productToAdd.ImageFile == null) { return StatusCode(StatusCodes.Status404NotFound, $"Image Input is Empty"); }
+
                 string createdImageName = await fileService.SaveFileAsync(productToAdd.ImageFile, allowedFileExtentions);
 
                 // mapping `ProductDTO` to `Product` manually. You can use automapper.
@@ -67,7 +70,10 @@ namespace ImageAPI.Controllers
                 {
                     return StatusCode(StatusCodes.Status404NotFound, $"Product with id: {id} does not found");
                 }
+                
+                if(existingProduct.ProductImage == null) { return StatusCode(StatusCodes.Status404NotFound, $"Existing ProductImage Not Found!!"); }
                 string oldImage = existingProduct.ProductImage;
+
                 if (productToUpdate.ImageFile != null)
                 {
                     if (productToUpdate.ImageFile?.Length > 1 * 1024 * 1024)
@@ -75,6 +81,9 @@ namespace ImageAPI.Controllers
                         return StatusCode(StatusCodes.Status400BadRequest, "File size should not exceed 1 MB");
                     }
                     string[] allowedFileExtentions = [".jpg", ".jpeg", ".png"];
+
+                    if(productToUpdate.ImageFile == null) { return StatusCode(StatusCodes.Status400BadRequest, "Input Image is empty"); }
+
                     string createdImageName = await fileService.SaveFileAsync(productToUpdate.ImageFile, allowedFileExtentions);
                     productToUpdate.ProductImage = createdImageName;
                 }
@@ -117,9 +126,13 @@ namespace ImageAPI.Controllers
                 }
 
                 await productRepo.DeleteProductAsync(existingProduct);
+
+                if(existingProduct.ProductImage == null) return StatusCode(StatusCodes.Status404NotFound, $"Id in existence but Image Dosent Exist.");
+
                 // After deleting product from database,remove file from directory.
                 fileService.DeleteFile(existingProduct.ProductImage);
-                return NoContent();  // return 204
+
+                return Ok("Successfully Deleted");
             }
             catch (Exception ex)
             {
